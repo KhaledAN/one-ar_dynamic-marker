@@ -1,47 +1,31 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  UseInterceptors,
-  UploadedFile,
-  Req,
-} from '@nestjs/common';
-import { MarkersService } from './markers.service';
-import { UpdateMarkerDto } from './dto/update-marker.dto';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { Body, Controller, Delete, Get, Param, Post, Req, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
+import mongoose from "mongoose";
+import { MarkersService } from "./markers.service";
 
-@Controller('markers')
+@Controller("markers")
 export class MarkersController {
   constructor(private readonly markersService: MarkersService) {}
 
   @Post()
-  @UseInterceptors(FileInterceptor('image'))
-  async create(@UploadedFile() image: Express.Multer.File, @Req() req: any) {
-    const res = await this.markersService.create(image, req.get('userId'));
+  @UseInterceptors(FileInterceptor("file"))
+  async create(@UploadedFile() file: Express.Multer.File, @Req() req: any, @Body("name") name: string) {
+    const res = await this.markersService.create(file, name, req.get("userId"));
     return res;
   }
 
   @Get()
-  findAll() {
-    return this.markersService.findAll();
+  async findAll(@Req() req: any) {
+    return { markers: await this.markersService.findAll(req.get("userId")) };
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.markersService.findOne(+id);
+  @Get(":id")
+  findOne(@Param("id") id: mongoose.Types.ObjectId, @Req() req: any) {
+    return this.markersService.findOne(id, req.get("userId"));
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateMarkerDto: UpdateMarkerDto) {
-    return this.markersService.update(+id, updateMarkerDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.markersService.remove(+id);
+  @Delete(":id")
+  remove(@Param("id") id: mongoose.Types.ObjectId, @Req() req: any) {
+    return this.markersService.remove(id, req.get("userId"));
   }
 }

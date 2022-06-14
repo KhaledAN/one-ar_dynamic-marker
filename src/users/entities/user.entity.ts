@@ -1,11 +1,9 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
+import { MarkerI } from "src/markers/entities/marker.entity";
+import { ModelI } from "src/models/entities/model.entity";
 
 export class User {
   _id: mongoose.Types.ObjectId;
-  markers: {
-    name: string;
-    patternPath: string;
-    imagePath: string;
-    timestamp: number;
-  }[];
+  markers: MarkerI[];
+  models: ModelI[];
 }
