@@ -6,6 +6,7 @@ import { User } from "./entities/user.entity";
 @Injectable()
 export class UsersService {
   constructor(@InjectModel("User") private readonly User: mongoose.Model<User>) {}
+
   async create() {
     const user = new this.User();
     await user.save();
@@ -18,8 +19,9 @@ export class UsersService {
     if (!user) throw new NotFoundException();
     return user;
   }
+
   async findAll() {
-    const users = await this.User.find();
+    const users = await this.User.find({ isPrivate: false });
     if (!users) throw new NotFoundException();
     return users;
   }

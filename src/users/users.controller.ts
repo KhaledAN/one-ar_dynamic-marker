@@ -11,9 +11,14 @@ export class UsersController {
     const user = await this.usersService.create();
     return { user };
   }
-
+  @Get()
+  async findAll() {
+    const users = await this.usersService.findAll();
+    return { users };
+  }
   @Get(":id")
-  findOne(@Param("id") id: mongoose.Types.ObjectId) {
-    return this.usersService.findOne(id);
+  async findOne(@Param("id") id: mongoose.Types.ObjectId) {
+    const user = await this.usersService.findOne(id);
+    return { user };
   }
 }

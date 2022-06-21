@@ -1,17 +1,26 @@
 import { Injectable } from "@nestjs/common";
-import mongoose from "mongoose";
-import { UsersService } from "./../users/users.service";
+import axios from "axios";
 import * as fs from "fs";
+import mongoose from "mongoose";
+import { StorageFolder } from "src/storage/enum/storage-folder.enum";
+import { StorageService } from "./../storage/storage.service";
+import { UsersService } from "./../users/users.service";
+
 @Injectable()
 export class ModelsService {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService, private readonly storageService: StorageService) {}
+
+  async generateModel(name: string = "Generated Model", image: any, userId: mongoose.Types.ObjectId) {
+    const formData = new FormData();
+    formData.append("image", image);
+    const res = await axios.post("http://localhost:3000/api/models/generate", formData, { responseType: "arraybuffer" });
+    const model = { buffer: Buffer.from(res.data, "binary") };
+    await this.create(name, model as any, userId);
+  }
+
   async create(name: string, gltf: Express.Multer.File, userId: mongoose.Types.ObjectId) {
     const user = await this.usersService.findOne(userId);
-    if (!fs.existsSync("Storage/Models")) {
-      fs.mkdirSync("Storage/Models");
-    }
-    const path = `Storage/Models/${Date.now()}-${user._id}.glb`;
-    fs.writeFileSync(path, gltf.buffer);
+    const path = this.storageService.saveResource(StorageFolder.Models, `${Date.now()}-${user._id}.glb`, gltf.buffer);
     const model = { name, path };
     user.models.push(model as any);
     await user.save();
@@ -20,15 +29,16 @@ export class ModelsService {
 
   async findAll(userId: mongoose.Types.ObjectId) {
     return (await this.usersService.findAll()).map(({ models }) => models).flat();
-    // return (await this.usersService.findOne(userId)).models;
+    return (await this.usersService.findOne(userId)).models;
   }
 
   async remove(id: mongoose.Types.ObjectId, userId: mongoose.Types.ObjectId) {
     const user = await this.usersService.findOne(userId);
-    const model = user.models.find((model) => model._id.toString() === id.toString());
-    if (model) {
+    const modelIndex = user.models.findIndex((model) => model._id.toString() === id.toString());
+    if (modelIndex !== -1) {
+      const model = user.models[modelIndex];
       fs.unlinkSync(model.path);
-      user.models.splice(user.models.indexOf(model), 1);
+      user.models.splice(modelIndex, 1);
       await user.save();
     }
     return;
